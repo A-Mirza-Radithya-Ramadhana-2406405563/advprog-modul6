@@ -48,3 +48,13 @@ Cara kerja `ThreadPool` diimplementasikan menggunakan beberapa konsep penting di
 Karena `receiver` perlu diakses oleh banyak worker, digunakan **`Arc`** dan **`Mutex`**. `Arc` memungkinkan data dimiliki bersama secara aman oleh beberapa thread, sedangkan `Mutex` memastikan hanya satu worker yang dapat mengakses `receiver` pada satu waktu saat mengambil job dari antrean. Hal ini tidak membuat server kembali menjadi single-threaded, karena yang dikunci hanya proses **pengambilan job**, bukan keseluruhan eksekusinya. Setelah satu worker mendapatkan job, worker tersebut akan menjalankannya di thread-nya sendiri tanpa menghalangi worker lain untuk mengambil dan mengerjakan tugas berikutnya.
 
 Dengan implementasi ini, ketika endpoint `/sleep` diakses dan salah satu worker tertahan selama 10 detik, worker lain di dalam pool tetap bisa menangani request yang masuk. Ini menunjukkan bahwa bottleneck pada versi sebelumnya berhasil dikurangi. Selain lebih efisien, pendekatan thread pool juga lebih aman dibanding membuat thread baru untuk setiap koneksi, karena jumlah thread aktif tetap dibatasi dan penggunaan resource server menjadi lebih terkontrol.
+
+# Commit Bonus Reflection notes
+
+Pada bagian bonus ini, saya mengganti fungsi new dengan fungsi build dalam pembuatan ThreadPool. Perubahan ini bertujuan untuk meningkatkan cara program dalam menangani error (error handling), sehingga tidak lagi bergantung pada mekanisme panic yang dapat menghentikan program secara tiba-tiba.
+
+Berikut perbandingan antara kedua pendekatan tersebut. Pada fungsi new, validasi ukuran thread pool dilakukan menggunakan assert!(size > 0). Jika nilai size adalah 0, program akan langsung mengalami panic dan berhenti tanpa memberikan kesempatan untuk menangani kesalahan tersebut secara lebih terkontrol. Pendekatan ini kurang ideal karena error seperti ini sebenarnya masih bisa diprediksi dan ditangani dengan lebih baik.
+
+Sebaliknya, fungsi build mengembalikan tipe Result<ThreadPool, PoolCreationError>. Jika ukuran yang diberikan tidak valid (misalnya 0), fungsi akan mengembalikan Err(PoolCreationError) alih-alih panic. Dengan demikian, tanggung jawab penanganan error dialihkan ke pemanggil fungsi, yaitu di main.rs. Di sana, error dapat ditangani menggunakan unwrap_or_else, misalnya dengan menampilkan pesan yang lebih informatif kepada pengguna dan menghentikan program secara terkontrol menggunakan process::exit(1).
+
+Penggunaan pola Result ini membuat kode menjadi lebih aman, fleksibel, dan sesuai dengan praktik idiomatis Rust. Selain itu, pendekatan ini juga meningkatkan kualitas desain program karena error tidak langsung mematikan aplikasi, melainkan dapat dikelola dengan cara yang lebih elegan dan mudah dipelihara.
