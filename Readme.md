@@ -22,3 +22,11 @@ Fungsi `handle_connection` diubah agar tidak hanya membaca HTTP request, tetapi 
 - `contents` yaitu isi dari file HTML yang akan ditampilkan di browser.
 
 `stream.write_all():` Method ini digunakan untuk mengirim response yang sudah disusun ke client melalui koneksi TCP. Sebelum dikirim, response diubah menjadi byte menggunakan `.as_bytes()`. Penggunaan `unwrap()` di sini berarti program akan berhenti jika terjadi error saat pengiriman data.
+
+# Commit 3 Reflection notes
+
+![Commit 3 screen capture](/assets/images/commit3.png)
+
+Pada tahap ini, saya menambahkan logika untuk memeriksa request yang diterima oleh server. Server mengambil baris pertama dari HTTP request (`request_line`) dan membandingkannya dengan `"GET / HTTP/1.1"`. Jika sesuai (artinya client meminta halaman utama), maka server akan mengirimkan response dengan status `200 OK` beserta isi file `hello.html`. Sebaliknya, jika request tidak sesuai, server akan mengembalikan status `404 NOT FOUND` dan menampilkan file `404.html` sebagai halaman error.
+
+Dalam proses refactoring, sebelumnya terdapat duplikasi kode pada blok `if-else`, terutama pada bagian membaca file, menyusun response, dan mengirimkannya ke client. Untuk menghindari pengulangan kode (prinsip DRY - Don't Repeat Yourself), refactoring dilakukan dengan memusatkan perbedaan hanya pada nilai `status_line` dan `filename` dalam bentuk tuple. Dengan cara ini, proses pembacaan file dan pengiriman response cukup ditulis satu kali di luar kondisi `if-else`. Hasilnya, kode menjadi lebih ringkas, lebih mudah dibaca, dan lebih mudah untuk dikembangkan di kemudian hari.
